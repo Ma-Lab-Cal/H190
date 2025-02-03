@@ -609,45 +609,41 @@ class fdfdSimObject(Structure2D):
             'override-x': There will be x cells in the x-direction, INCLUDING PMLS. x must be a string integer.
         minLengthScale: Float or None. Used only if snapto=='length'
         '''
-        self.symmetry=symmetry
-        self.BC=BC
-        if not hasattr(NPMLs, '__len__'):
-            self.NPML=[NPMLs,NPMLs,NPMLs,NPMLs]
-        else:
-            self.NPML=NPMLs
-        if not hasattr(padding, '__len__'):
-            self.padding=[padding,padding,padding,padding]
-        else:
-            self.padding=padding
-        self.size=size
-        self.NRES=res
-        self.wavelengths=np.array(wavelengths)
+        self.size,self.wavelengths,self.perms,self.NPMLs,self.padding,self.NRES,self.BC,self.symmetry,self.snapto,self.minLengthScale=size,np.array(wavelengths),perms,NPMLs,padding,res,BC,symmetry,snapto,minLengthScale
+        
+        return
+    
+    def _add_structureShunt(self):
+        if not hasattr(self.NPMLs, '__len__'):
+            self.NPML=[self.NPMLs,self.NPMLs,self.NPMLs,self.NPMLs]
+        if not hasattr(self.padding, '__len__'):
+            self.padding=[self.padding,self.padding,self.padding,self.padding]
         self.k0s=2*np.pi/self.wavelengths
-        self.nmax=np.sqrt(perms[1].real)
-        self.nmin=np.sqrt(perms[0].real)
-        self.minPerm,self.maxPerm=perms
-        if snapto=='wavelength-min':
+        self.nmax=np.sqrt(self.perms[1].real)
+        self.nmin=np.sqrt(self.perms[0].real)
+        self.minPerm,self.maxPerm=self.perms
+        if self.snapto=='wavelength-min':
             wl=np.min(self.wavelengths)/self.nmax
-            self.dx, self.dy = wl / res, wl / res
-        elif snapto=='wavelength-max':
+            self.dx, self.dy = wl / self.NRES, wl / self.NRES
+        elif self.snapto=='wavelength-max':
             wl=np.max(self.wavelengths)/self.nmax
-            self.dx, self.dy = wl / res, wl / res
-        elif snapto=='wavelength-all':
+            self.dx, self.dy = wl / self.NRES, wl / self.NRES
+        elif self.snapto=='wavelength-all':
             wls=self.wavelengths/self.nmax
             wl=np.min(self.wavelengths)/self.nmax
-            dd=largest_dx(wl,res=res)
+            dd=largest_dx(wl,res=self.NRES)
             self.dx, self.dy = dd,dd
-        elif snapto=='length':
-            self.dx, self.dy = minLengthScale / res, minLengthScale / res
-        elif snapto=='override-x':
-            numCells=int(snapto.split('-')[1])
-            self.dx,self.dy=self.size[0]/(NPMLs[0]+NPMLs[1]+numCells),self.size[0]/(NPMLs[0]+NPMLs[1]+numCells)
+        elif self.snapto=='length':
+            self.dx, self.dy = self.minLengthScale / self.NRES, self.minLengthScale / self.NRES
+        elif self.snapto=='override-x':
+            numCells=int(self.snapto.split('-')[1])
+            self.dx,self.dy=self.size[0]/(self.NPMLs[0]+self.NPMLs[1]+numCells),self.size[0]/(self.NPMLs[0]+self.NPMLs[1]+numCells)
 
-        self.Sx = size[0]
+        self.Sx = self.size[0]
         self.Nx = (self.NPML[0] + int(np.ceil(self.Sx / self.dx)) + self.NPML[1])//2*2
         self.Sx = self.Nx * self.dx
 
-        self.Sy = size[1]
+        self.Sy = self.size[1]
         self.Ny = (self.NPML[2] + int(np.ceil(self.Sy / self.dy)) + self.NPML[3])//2*2
         self.Sy = self.Ny * self.dy
         self.structSize=[(self.Nx-2)//(1+int(self.symmetry)),self.Ny-2]
@@ -667,6 +663,7 @@ class fdfdSimObject(Structure2D):
         self.UR2 = np.ones((self.Nx2, self.Ny2))
         return
 
+
     def add_objective(self,weights,targets):
         """
         Add the design objective.
@@ -683,6 +680,7 @@ class fdfdSimObject(Structure2D):
         """
         Adds waveguides to the permitivity distribution and computes input/output modes. These are by far the most complex operations in an FDFD code.
         """
+        self._add_structureShunt()
         self.fsrcs=[]
         self.ER2=np.ones((self.Nx2,self.Ny2))*self.minPerm
         self.Q = np.zeros((self.Nx, self.Ny))
