@@ -610,7 +610,7 @@ class fdfdSimObject(Structure2D):
         minLengthScale: Float or None. Used only if snapto=='length'
         '''
         self.size,self.wavelengths,self.perms,self.NPMLs,self.padding,self.NRES,self.BC,self.symmetry,self.snapto,self.minLengthScale=size,np.array(wavelengths),perms,NPMLs,padding,res,BC,symmetry,snapto,minLengthScale
-        
+        self.NPML=self.NPMLs
         return
     
     def _add_structureShunt(self):
